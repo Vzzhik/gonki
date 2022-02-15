@@ -31,3 +31,7 @@
 .cell_car {
 background-color: red;
 }
+
+.cell_barrier {
+  background-color: rgb(17, 192, 90);
+}

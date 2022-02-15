@@ -14,9 +14,12 @@ const appState = {
     [5, 12],
     [4, 12],
     [4, 11],
-  ]
+  ],
+  xPosition: 0,
+  barrier: [],
 };
 
+let tick = 0;
 const onDOMIsReady = () => {
   console.log("!!!");
   init();
@@ -49,6 +52,8 @@ const generateField = () => {
         columnIndex,
         element: div,
         isCar: false,
+        isBarrier: false,
+        beginOfBarrier:false,
       };
       appState.cells.push(cell);
     }
@@ -64,7 +69,6 @@ const generateCar = () => {
 }
 
 const moveCar = () => {
-  //ищем все ячейки которые машина
   const oldCarCells = appState.cells.filter((cell) => cell.isCar);
   const newCarCells = [];
   for (const cell of oldCarCells) {
@@ -79,11 +83,7 @@ const moveCar = () => {
   for (const cell of newCarCells) {
     cell.isCar = true;
   }
-  // говорим старым ячейкам что они не машина
-  // собираем их координаты
-  // получаем новые координаты // + appState.carMoveDelta.x
-  // ищем новые ячейки
-  // говорим новым ячейкам что они машина
+  appState.carMoveDelta.x = 0;
 }
 
 const render = () => {
@@ -95,6 +95,15 @@ const render = () => {
       cell.element.classList.remove('cell_car');
       cell.element.classList.add('cell');
     }
+    for (const cell of appState.cells) {
+    if (cell.isBarrier) {
+      cell.element.classList.remove('cell');
+      cell.element.classList.add('cell_barrier');
+    }else {
+      cell.element.classList.remove('cell_barrier');
+      cell.element.classList.add('cell');
+    }
+  }
   }
 }
 
@@ -102,8 +111,9 @@ const gameLoop = () => {
   console.log('GAME_LOOP_TICK');
   moveCar();
   render();
+  buildBarrier();
   setTimeout(gameLoop, 1000);
-
+  tick+=1;
 }
 const main = () => {
   if (document.readyState === 'complete') onDOMIsReady();
@@ -115,11 +125,74 @@ const main = () => {
 };
 
 const initMoveEventListener = () => {
-  window.addEventListener('keydown', function (event) {
-    if (event.code === 'KeyD') { ride = ride + 1; console.log(ride) }
-    if (event.code === 'KeyA') { console.log(ride) }
+  window.addEventListener('keyup', function (event) {
+    if (appState.xPosition < 3) {
+      if (event.code === 'KeyD') {
+        appState.carMoveDelta.x = 0;
+        appState.carMoveDelta.x = appState.carMoveDelta.x + 1;
+        appState.xPosition += 1;
+      }
+    }
+    if (appState.xPosition > -3) {
+      if (event.code === 'KeyA') {
+        appState.carMoveDelta.x = 0;
+        appState.carMoveDelta.x = appState.carMoveDelta.x - 1
+        appState.xPosition -= 1;
+      }
+    }
+
   })
+};
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min; //Максимум и минимум включаются
 }
+
+const buildBarrier = () => {
+  freeFirstRow = true;
+  if (tick === 0){
+  for (let x = 0; x < 8; x++) {
+    if (findCell(x, 0).isBarrier === true)
+      freeFirstRow = false;
+  }
+  }
+  if (freeFirstRow && tick === 0) {
+    startLocation = getRandomInt(1, 7);
+    console.log(startLocation);
+     const cell = findCell(startLocation, 0);
+    cell.isBarrier = true;
+    cell.beginOfBarrier = true;
+    
+  }
+    if (tick === 1) {
+      const cell = appState.cells.filter((cell) => cell.beginOfBarrier);
+      console.log(cell)
+      cell[0].isBarrier = false;
+      cell[0].beginOfBarrier = false;
+      //cell[0].rowIndex+=1;
+      //cell.beginOfBarrier = true;
+      //cell.isBarrier = true;
+      const newCell = findCell(cell[0].columnIndex, cell[0].rowIndex+1);
+      newCell.isBarrier = true;
+      newCell.beginOfBarrier = true;
+      for ( let i = cell[0].columnIndex - 1; i < cell[0].columnIndex + 2; i ++) {
+        findCell(i,cell[0].rowIndex).isBarrier = true;
+      }
+      
+      
+    
+    }
+    if (tick === 2) {
+
+    } 
+    if (tick === 3) {
+
+    }
+  
+}
+
 
 
 main();
