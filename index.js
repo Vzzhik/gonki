@@ -19,7 +19,7 @@ const appState = {
   barrier: [],
 };
 
-let tick = 0;
+let tick = 0, generateNumber = 0, startLocation = 0;
 const onDOMIsReady = () => {
   console.log("!!!");
   init();
@@ -53,7 +53,8 @@ const generateField = () => {
         element: div,
         isCar: false,
         isBarrier: false,
-        beginOfBarrier:false,
+        beginOfBarrier: false,
+        readyToMove: false,
       };
       appState.cells.push(cell);
     }
@@ -66,24 +67,61 @@ const generateCar = () => {
   for (const [x, y] of appState.carPosition) {
     findCell(x, y).isCar = true;
   }
+
 }
 
 const moveCar = () => {
   const oldCarCells = appState.cells.filter((cell) => cell.isCar);
   const newCarCells = [];
   for (const cell of oldCarCells) {
-    cell.isCar = false;
+    if (cell.columnIndex < 8 && cell.columnIndex > 0)
+      cell.isCar = false;
     newCarCells.push(
       findCell(
         cell.columnIndex + appState.carMoveDelta.x,
         cell.rowIndex + appState.carMoveDelta.y,
       ),
+
     );
   }
   for (const cell of newCarCells) {
     cell.isCar = true;
   }
   appState.carMoveDelta.x = 0;
+
+}
+
+const moveBarrier = () => {
+  const oldBarrierCells = appState.barrier.filter((barrier) => barrier.readyToMove);
+  const newBarrierCells = [];
+  if (tick === 0) {for (const cell of oldBarrierCells) {
+    findCell(cell.columnIndex, 0).isBarrier = true;
+  }}else{
+  for (const cell of oldBarrierCells) {
+    
+    if (cell.rowIndex === 14) {
+      cell.isBarrier = false;
+      cell.readyToMove = false;
+
+    }
+    if (cell.rowIndex === 1) { findCell(cell.columnIndex, cell.rowIndex - 1).isBarrier = false; }
+  }
+  
+  for (const cell of oldBarrierCells) {
+    if (cell.rowIndex < 14) {
+      cell.isBarrier = false;
+      cell.readyToMove = false;
+      newBarrierCells.push(
+        findCell(cell.columnIndex, cell.rowIndex + 1)
+      );
+    }
+    for (const cell of newBarrierCells) {
+        cell.isBarrier = true;
+        cell.readyToMove = true;
+    }
+
+    }  }
+
 }
 
 const render = () => {
@@ -96,14 +134,14 @@ const render = () => {
       cell.element.classList.add('cell');
     }
     for (const cell of appState.cells) {
-    if (cell.isBarrier) {
-      cell.element.classList.remove('cell');
-      cell.element.classList.add('cell_barrier');
-    }else {
-      cell.element.classList.remove('cell_barrier');
-      cell.element.classList.add('cell');
+      if (cell.isBarrier) {
+        cell.element.classList.remove('cell');
+        cell.element.classList.add('cell_barrier');
+      } else {
+        cell.element.classList.remove('cell_barrier');
+        cell.element.classList.add('cell');
+      }
     }
-  }
   }
 }
 
@@ -112,8 +150,9 @@ const gameLoop = () => {
   moveCar();
   render();
   buildBarrier();
+  moveBarrier();
   setTimeout(gameLoop, 1000);
-  tick+=1;
+  tick += 1;
 }
 const main = () => {
   if (document.readyState === 'complete') onDOMIsReady();
@@ -130,14 +169,14 @@ const initMoveEventListener = () => {
       if (event.code === 'KeyD') {
         appState.carMoveDelta.x = 0;
         appState.carMoveDelta.x = appState.carMoveDelta.x + 1;
-        appState.xPosition += 1;
+        appState.xPosition = 1;
       }
     }
     if (appState.xPosition > -3) {
       if (event.code === 'KeyA') {
         appState.carMoveDelta.x = 0;
         appState.carMoveDelta.x = appState.carMoveDelta.x - 1
-        appState.xPosition -= 1;
+        appState.xPosition = -1;
       }
     }
 
@@ -152,46 +191,53 @@ function getRandomInt(min, max) {
 
 const buildBarrier = () => {
   freeFirstRow = true;
-  if (tick === 0){
-  for (let x = 0; x < 8; x++) {
-    if (findCell(x, 0).isBarrier === true)
-      freeFirstRow = false;
-  }
-  }
-  if (freeFirstRow && tick === 0) {
-    startLocation = getRandomInt(1, 7);
-    console.log(startLocation);
-     const cell = findCell(startLocation, 0);
-    cell.isBarrier = true;
-    cell.beginOfBarrier = true;
-    
-  }
-    if (tick === 1) {
-      const cell = appState.cells.filter((cell) => cell.beginOfBarrier);
-      console.log(cell)
-      cell[0].isBarrier = false;
-      cell[0].beginOfBarrier = false;
-      //cell[0].rowIndex+=1;
-      //cell.beginOfBarrier = true;
-      //cell.isBarrier = true;
-      const newCell = findCell(cell[0].columnIndex, cell[0].rowIndex+1);
-      newCell.isBarrier = true;
-      newCell.beginOfBarrier = true;
-      for ( let i = cell[0].columnIndex - 1; i < cell[0].columnIndex + 2; i ++) {
-        findCell(i,cell[0].rowIndex).isBarrier = true;
-      }
-      
-      
-    
+  if (tick % 5 === 0) {
+    generateNumber = getRandomInt(1, 3);
+    for (let x = 0; x < 8; x++) {
+      if (findCell(x, 0).isBarrier === true)
+        freeFirstRow = false;
     }
-    if (tick === 2) {
+  }
 
-    } 
-    if (tick === 3) {
+  if (generateNumber === 3) {
+    if (freeFirstRow && (tick%5) === 0) {
+      startLocation = getRandomInt(0, 7);
+      console.log(startLocation);
+      findCell(startLocation, 0).isBarrier = true;
+      findCell(startLocation, 0).beginOfBarrier = true;
+      console.log(findCell(startLocation, 0).beginOfBarrier);
+      findCell(startLocation + 1, 0).isBarrier = true;
 
     }
-  
+  } else {
+    if (freeFirstRow && (tick%5 === 0)) {
+      startLocation = getRandomInt(0, 8);
+      console.log(startLocation);
+      findCell(startLocation, 0);
+      findCell(startLocation, 0).isBarrier = true;
+      findCell(startLocation, 0).readyToMove = true;
+    }
+  }
+
+  if ((tick %5 === 1) && generateNumber === 3) {
+    const barriers = appState.barrier.filter((cell) => cell.beginOfBarrier);
+    const cell = barriers[0];
+    cell.beginOfBarrier = false;
+    cell.isBarrier = false;
+    findCell(cell.columnIndex, cell.rowIndex + 1).isBarrier = false;
+    findCell(cell.columnIndex, cell.rowIndex + 1).isBarrier = true;
+    findCell(cell.columnIndex + 1, cell.rowIndex + 1).isBarrier = true;
+    findCell(cell.columnIndex, cell.rowIndex).isBarrier = true;
+    findCell(cell.columnIndex + 1, cell.rowIndex).isBarrier = true;
+    findCell(cell.columnIndex, cell.rowIndex + 1).readyToMove = true;
+    findCell(cell.columnIndex + 1, cell.rowIndex + 1).readyToMove = true;
+    findCell(cell.columnIndex, cell.rowIndex).readyToMove = true;
+    findCell(cell.columnIndex + 1, cell.rowIndex).readyToMove = true;
+  }
+  appState.barrier = appState.cells.filter((cell) => cell.isBarrier);
+
 }
+
 
 
 
