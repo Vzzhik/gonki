@@ -17,9 +17,13 @@ const appState = {
   ],
   xPosition: 0,
   barrier: [],
+  score: 0,
+  highScore: 0,
+  finish: false,
 };
 
-let tick = 0, generateNumber = 0, startLocation = 0;
+let finish, tick = 0, generateNumber = 0, startLocation = 0;
+let move = 2;
 const onDOMIsReady = () => {
   console.log("!!!");
   init();
@@ -32,6 +36,7 @@ const init = () => {
 const onButtonPlayClicked = () => {
   document.querySelector("#first_screen").classList.add('hidden')
   document.querySelector("#second_screen").classList.remove('hidden')
+  document.querySelector("#third_screen").classList.add('hidden');
   console.log('Click button');
   initMoveEventListener();
   generateField();
@@ -67,61 +72,67 @@ const generateCar = () => {
   for (const [x, y] of appState.carPosition) {
     findCell(x, y).isCar = true;
   }
-
 }
 
 const moveCar = () => {
   const oldCarCells = appState.cells.filter((cell) => cell.isCar);
+  const playerGoingToOutOfBounceInNextTick = appState.carMoveDelta.x !== 0 && oldCarCells.some((cell) => {
+    if (appState.carMoveDelta.x < 0 && cell.columnIndex === 0) return true;
+    if (appState.carMoveDelta.x > 0 && cell.columnIndex === appState.columnsNumber - 1) return true;
+  });
+
+  if (playerGoingToOutOfBounceInNextTick) return;
   const newCarCells = [];
+
   for (const cell of oldCarCells) {
-    if (cell.columnIndex < 8 && cell.columnIndex > 0)
-      cell.isCar = false;
+    cell.isCar = false;
     newCarCells.push(
       findCell(
         cell.columnIndex + appState.carMoveDelta.x,
         cell.rowIndex + appState.carMoveDelta.y,
       ),
-
     );
   }
   for (const cell of newCarCells) {
     cell.isCar = true;
   }
   appState.carMoveDelta.x = 0;
-
 }
 
 const moveBarrier = () => {
   const oldBarrierCells = appState.barrier.filter((barrier) => barrier.readyToMove);
   const newBarrierCells = [];
-  if (tick === 0) {for (const cell of oldBarrierCells) {
-    findCell(cell.columnIndex, 0).isBarrier = true;
-  }}else{
-  for (const cell of oldBarrierCells) {
-    
-    if (cell.rowIndex === 14) {
-      cell.isBarrier = false;
-      cell.readyToMove = false;
+  if (tick === 0) {
+    for (const cell of oldBarrierCells) {
+      findCell(cell.columnIndex, 0).isBarrier = true;
+    }
+  } else {
+    for (const cell of oldBarrierCells) {
 
+      if (cell.rowIndex === appState.rowsNumber - 1) {
+        cell.isBarrier = false;
+        cell.readyToMove = false;
+
+      }
+      if (cell.rowIndex === 1) { findCell(cell.columnIndex, cell.rowIndex - 1).isBarrier = false; }
     }
-    if (cell.rowIndex === 1) { findCell(cell.columnIndex, cell.rowIndex - 1).isBarrier = false; }
-  }
-  
-  for (const cell of oldBarrierCells) {
-    if (cell.rowIndex < 14) {
-      cell.isBarrier = false;
-      cell.readyToMove = false;
-      newBarrierCells.push(
-        findCell(cell.columnIndex, cell.rowIndex + 1)
-      );
-    }
-    for (const cell of newBarrierCells) {
+
+    for (const cell of oldBarrierCells) {
+      if (cell.rowIndex < appState.rowsNumber - 1) {
+
+        cell.isBarrier = false;
+        cell.readyToMove = false;
+        newBarrierCells.push(
+          findCell(cell.columnIndex, cell.rowIndex + 1))
+      }
+      for (const cell of newBarrierCells) {
         cell.isBarrier = true;
         cell.readyToMove = true;
+      }
+
     }
-
-    }  }
-
+  }
+  appState.barrier = appState.cells.filter((cell) => cell.isBarrier);
 }
 
 const render = () => {
@@ -146,12 +157,14 @@ const render = () => {
 }
 
 const gameLoop = () => {
+
   console.log('GAME_LOOP_TICK');
   moveCar();
   render();
   buildBarrier();
   moveBarrier();
-  setTimeout(gameLoop, 1000);
+  lose();
+  setTimeout(gameLoop, 1000 / Math.sqrt(Math.sqrt(tick)));
   tick += 1;
 }
 const main = () => {
@@ -170,6 +183,7 @@ const initMoveEventListener = () => {
         appState.carMoveDelta.x = 0;
         appState.carMoveDelta.x = appState.carMoveDelta.x + 1;
         appState.xPosition = 1;
+        move = 0;
       }
     }
     if (appState.xPosition > -3) {
@@ -177,6 +191,7 @@ const initMoveEventListener = () => {
         appState.carMoveDelta.x = 0;
         appState.carMoveDelta.x = appState.carMoveDelta.x - 1
         appState.xPosition = -1;
+        move = 1;
       }
     }
 
@@ -186,7 +201,7 @@ const initMoveEventListener = () => {
 function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min; //Максимум и минимум включаются
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 const buildBarrier = () => {
@@ -200,7 +215,7 @@ const buildBarrier = () => {
   }
 
   if (generateNumber === 3) {
-    if (freeFirstRow && (tick%5) === 0) {
+    if (freeFirstRow && (tick % 5) === 0) {
       startLocation = getRandomInt(0, 7);
       console.log(startLocation);
       findCell(startLocation, 0).isBarrier = true;
@@ -210,16 +225,17 @@ const buildBarrier = () => {
 
     }
   } else {
-    if (freeFirstRow && (tick%5 === 0)) {
+    if (freeFirstRow && (tick % 5 === 0)) {
       startLocation = getRandomInt(0, 8);
       console.log(startLocation);
       findCell(startLocation, 0);
       findCell(startLocation, 0).isBarrier = true;
       findCell(startLocation, 0).readyToMove = true;
+      findCell(startLocation, 0).beginOfBarrier = true;
     }
   }
 
-  if ((tick %5 === 1) && generateNumber === 3) {
+  if ((tick % 5 === 1) && generateNumber === 3) {
     const barriers = appState.barrier.filter((cell) => cell.beginOfBarrier);
     const cell = barriers[0];
     cell.beginOfBarrier = false;
@@ -238,7 +254,41 @@ const buildBarrier = () => {
 
 }
 
+const lose = () => {
 
+  const crush = appState.cells.filter((cell) => cell.isCar);
+  for (const cell of crush) {
+    if (cell.element.classList.contains('cell_barrier')) {
 
+      console.log('YOU ARE LOOOOSEEEER!!!')
+      document.querySelector("#second_screen").classList.add('hidden');
+      document.querySelector("#third_screen").classList.remove('hidden');
+      document.querySelector("#lose").addEventListener("click", restartGame);
+      console.log(appState.score, 'LOL')
+      playerScore();
+    }
+  }
 
+}
+
+const restartGame = () => {
+  document.querySelector("#third_screen").classList.add('hidden');
+  document.querySelector("#first_screen").classList.remove('hidden');
+  document.querySelector("#second_screen").classList.add('hidden');
+  window.location.reload();
+}
+const playerScore = () => {
+  if (!appState.finish) {
+    appState.finish = true;
+    appState.score = Math.floor(tick / 5);
+    document.getElementById("score").innerHTML = appState.score;
+    appState.highScore = Number(localStorage.getItem('highScore'));
+    document.getElementById("highScore").innerHTML = appState.highScore;
+    if (appState.score > appState.highScore) {
+      appState.highScore = appState.score
+      localStorage.setItem('highScore', appState.highScore)
+    }
+
+  }
+}
 main();
