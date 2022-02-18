@@ -11,23 +11,43 @@
 
 <body>
     <div id="first_screen">
-        <div><button id="play" class="size">Play</button></div>
-        <div id="f1" class="field"></div>
+        <div id="f1" class="field">
+            <div><button id="play" class="sliding-button leftCor">Play</button></div>
+            <div class="shrift">
+                <h1>TAGANROG <br>RACING</h1>
+            </div>
+        </div>
     </div>
 
     <div id="second_screen" class="hidden">
         <div id="f2" class="field image-stack">
-
+            <div class="lol">
+                <span class="nePerenosiPls shrift ">
+                    <h3>Score - <a id="scoreView"></a>
+                    </h3>
+                </span>
+            </div>
         </div>
 
     </div>
 
     <div id="third_screen" class="hidden">
         <div id="f3" class="field">
-            <h1>GAME OVER</h1>
-            <h2>Score - <div id="score"></div> </h2>
-            <h2>Highscore - <div id="highScore"></div> </h2>
-            <div><button id="lose" class="size">Ok</button></div>
+            <div><button id="lose" class="sliding-button leftCor1">Ok</button></div>
+            <div class="shrift">
+                <h1>GAME OVER</h1>
+            </div>
+            <span class="nePerenosiPls shrift">
+                <h2>Score -
+                    <a id="score"></a>
+                </h2>
+            </span>
+            <span class="nePerenosiPls shrift">
+                <h2>Highscore -
+                    <a id="highScore"></a>
+                </h2>
+            </span>
+
         </div>
 
     </div>

@@ -22,8 +22,8 @@ const appState = {
   finish: false,
 };
 
-let finish, tick = 0, generateNumber = 0, startLocation = 0;
-let move = 2;
+let  tick = 0, generateNumber = 0, startLocation = 0;
+
 const onDOMIsReady = () => {
   console.log("!!!");
   init();
@@ -60,6 +60,7 @@ const generateField = () => {
         isBarrier: false,
         beginOfBarrier: false,
         readyToMove: false,
+        isLine: false,
       };
       appState.cells.push(cell);
     }
@@ -144,28 +145,41 @@ const render = () => {
       cell.element.classList.remove('cell_car');
       cell.element.classList.add('cell');
     }
-    for (const cell of appState.cells) {
-      if (cell.isBarrier) {
-        cell.element.classList.remove('cell');
-        cell.element.classList.add('cell_barrier');
-      } else {
-        cell.element.classList.remove('cell_barrier');
-        cell.element.classList.add('cell');
-      }
+  }
+  for (const cell of appState.cells) {
+    if (cell.isBarrier) {
+      cell.element.classList.remove('cell');
+      cell.element.classList.add('cell_barrier');
+    } else {
+      cell.element.classList.remove('cell_barrier');
+      cell.element.classList.add('cell');
+    }
+  }
+  for (const cell of appState.cells) {
+    if (cell.isLine && !cell.isCar && !cell.isBarrier) {
+      cell.element.classList.remove('cell');
+      cell.element.classList.add('line');
+    } else {
+      cell.element.classList.remove('line');
+      cell.element.classList.add('cell');
     }
   }
 }
 
 const gameLoop = () => {
-
+  if (!appState.finish) {
   console.log('GAME_LOOP_TICK');
   moveCar();
   render();
   buildBarrier();
   moveBarrier();
   lose();
+  line();
+  document.getElementById("scoreView").innerHTML =  Math.floor(tick / 5);
   setTimeout(gameLoop, 1000 / Math.sqrt(Math.sqrt(tick)));
   tick += 1;
+  
+  }
 }
 const main = () => {
   if (document.readyState === 'complete') onDOMIsReady();
@@ -290,5 +304,19 @@ const playerScore = () => {
     }
 
   }
+}
+const line = () => 
+{
+  let cell; 
+  for (let row = 0; row < appState.rowsNumber; row++) {
+    //line.push(findCell(4,row));
+    cell = findCell(4,row)
+    cell.isLine = true;
+    
+    if (row % 3 === 1) cell.isLine = false;
+
+  }
+  console.log(cell);
+
 }
 main();
